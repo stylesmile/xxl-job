@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -358,7 +360,11 @@ public class JobScheduleHelper {
     public static Date generateNextValidTime(XxlJobInfo jobInfo, Date fromTime) throws Exception {
         ScheduleTypeEnum scheduleTypeEnum = ScheduleTypeEnum.match(jobInfo.getScheduleType(), null);
         if (ScheduleTypeEnum.CRON == scheduleTypeEnum) {
-            Date nextValidTime = new CronExpression(jobInfo.getScheduleConf()).getNextValidTimeAfter(fromTime);
+//            Date nextValidTime = new CronExpression(jobInfo.getScheduleConf()).getNextValidTimeAfter(fromTime);
+            org.springframework.scheduling.support.CronExpression cronExpression = org.springframework.scheduling.support.CronExpression.parse(jobInfo.getScheduleConf());
+            LocalDateTime now = fromTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            LocalDateTime localDateTime = cronExpression.next(now);
+            Date nextValidTime = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
             return nextValidTime;
         } else if (ScheduleTypeEnum.FIX_RATE == scheduleTypeEnum /*|| ScheduleTypeEnum.FIX_DELAY == scheduleTypeEnum*/) {
             return new Date(fromTime.getTime() + Integer.valueOf(jobInfo.getScheduleConf())*1000 );
